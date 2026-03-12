@@ -311,28 +311,7 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;margin
     </div>
   </div>
 
-  <!-- TEMP TREND -->
-  <div class="cm">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;">
-      <span class="lbl" style="margin-bottom:0;">SICAKLIK TRENDİ</span>
-      <span style="font-family:'JetBrains Mono',monospace;font-size:7.5px;color:var(--t3);">Son 1 saat</span>
-    </div>
-    <svg viewBox="0 0 330 68" preserveAspectRatio="none" style="width:100%;height:68px;overflow:visible;">
-      <defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c43030" stop-opacity=".22"/><stop offset="100%" stop-color="#c43030" stop-opacity="0"/></linearGradient></defs>
-      <line x1="0" y1="14" x2="330" y2="14" stroke="rgba(0,0,0,.05)" stroke-width=".5"/>
-      <line x1="0" y1="34" x2="330" y2="34" stroke="rgba(0,0,0,.05)" stroke-width=".5"/>
-      <line x1="0" y1="54" x2="330" y2="54" stroke="rgba(0,0,0,.05)" stroke-width=".5"/>
-      <path d="M0,50 C20,48 40,52 60,48 C80,44 100,46 120,42 C140,38 160,44 180,40 C200,36 220,42 240,38 C260,34 280,40 310,36 L330,34 L330,68 L0,68 Z" fill="url(#tg)"/>
-      <path d="M0,50 C20,48 40,52 60,48 C80,44 100,46 120,42 C140,38 160,44 180,40 C200,36 220,42 240,38 C260,34 280,40 310,36 L330,34" fill="none" stroke="#c43030" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="330" cy="34" r="3.5" fill="#c43030"><animate attributeName="r" values="3.5;5.5;3.5" dur="1.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.3;1" dur="1.6s" repeatCount="indefinite"/></circle>
-      <text x="2" y="12" fill="rgba(80,100,70,.5)" font-size="7.5" font-family="monospace">30°</text>
-      <text x="2" y="32" fill="rgba(80,100,70,.5)" font-size="7.5" font-family="monospace">28°</text>
-      <text x="2" y="52" fill="rgba(80,100,70,.5)" font-size="7.5" font-family="monospace">25°</text>
-      <text x="2" y="66" fill="rgba(80,100,70,.4)" font-size="7" font-family="monospace">-60dk</text>
-      <text x="140" y="66" fill="rgba(80,100,70,.4)" font-size="7" font-family="monospace">-30dk</text>
-      <text x="298" y="66" fill="rgba(80,100,70,.4)" font-size="7" font-family="monospace">Şimdi</text>
-    </svg>
-  </div>
+  
 
   <div class="ca" style="background:#ffffff;border-color:#e0e8e4;">
     <div class="lbl">DÜĞÜMLER — 2 AKTİF</div>
@@ -671,7 +650,29 @@ function initMap(){
   leafMap=L.map('leafletMap',{zoomControl:false,attributionControl:false}).setView([LLAT,LLNG],13);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(leafMap);
   var lIco=L.divIcon({className:'',html:'<div style="width:12px;height:12px;background:#c43030;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.2);"></div>',iconSize:[12,12],iconAnchor:[6,6]});
-  loraM=L.marker([LLAT,LLNG],{icon:lIco}).addTo(leafMap).bindPopup('<b>AOG-N04</b><br>LoRa Sensör');
+  loraM=L.marker([LLAT,LLNG],{icon:lIco,draggable:true}).addTo(leafMap).bindPopup('<b>AOG-TX</b><br>Verici Sensör<br><span id="loraCoordPopup">37.87460, 32.49320</span>');
+  loraM.on('dragend',function(e){
+    var lat=e.target.getLatLng().lat,lng=e.target.getLatLng().lng;
+    LLAT=lat; LLNG=lng;
+    document.getElementById('loraCoordPopup') && (document.getElementById('loraCoordPopup').textContent=lat.toFixed(5)+', '+lng.toFixed(5));
+    document.querySelectorAll('.gc-v')[1] && (document.querySelectorAll('.gc-v')[1].textContent=lat.toFixed(5)+', '+lng.toFixed(5));
+    loraM.openPopup();
+    // Mesafeyi güncelle
+    if(phoneM){
+      if(dLine) leafMap.removeLayer(dLine);
+      var pll=phoneM.getLatLng();
+      dLine=L.polyline([[pll.lat,pll.lng],[lat,lng]],{color:'#12b84e',weight:1.5,dashArray:'5,5',opacity:.5}).addTo(leafMap);
+      document.getElementById('distVal').textContent=fmtDist(calcDist(pll.lat,pll.lng,lat,lng));
+    }
+  });
+  // Sürükleme ipucu toast
+  setTimeout(function(){
+    var toast=document.createElement('div');
+    toast.textContent='📍 Sensör konumunu taşımak için markere uzun bas';
+    toast.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(26,31,24,.85);color:#fff;font-family:Inter,sans-serif;font-size:11px;padding:8px 14px;border-radius:20px;z-index:9999;pointer-events:none;transition:opacity .5s;white-space:nowrap;';
+    document.body.appendChild(toast);
+    setTimeout(function(){toast.style.opacity='0';setTimeout(function(){toast.remove();},600);},3000);
+  },1500);
   var pIco=L.divIcon({className:'',html:'<div style="width:12px;height:12px;background:#2468b0;border:2px solid #fff;border-radius:50%;box-shadow:0 2px 5px rgba(0,0,0,.2);"></div>',iconSize:[12,12],iconAnchor:[6,6]});
   document.getElementById('phoneGps').textContent=LLAT.toFixed(5)+', '+LLNG.toFixed(5);
   if(navigator.geolocation){
